@@ -218,10 +218,11 @@ class SXFObject:
 
             if feature_type in (0, 126, 127, 128):
                 feature_scale &= 0xff
-                raw_feature_value = self.raw_data.read(feature_scale + 1)
-                feature_value = struct.unpack(f'<{feature_scale + 1}s', raw_feature_value)[0]
+                null_size = 2 if feature_type >= 127 else 1
+                raw_feature_value = self.raw_data.read(feature_scale + null_size)
+                feature_value = struct.unpack(f'<{feature_scale + null_size}s', raw_feature_value)[0]
                 feature_value = feature_value.rstrip(b'\x00')
-                cur_sem_len -= (feature_scale + 1)
+                cur_sem_len -= (feature_scale + null_size)
             elif feature_type in (1, 2, 4, 8, 16):
                 type_ = {
                     1: '<b',
