@@ -238,3 +238,8 @@ class SXFObject:
                 raise ValueError('Invalid feature type!')
 
             self.semantics[feature_code] = feature_value
+
+            # пропускаем "лишние" байты в семантике :/
+            if cur_sem_len <= 4:
+                self.raw_data.read(cur_sem_len)
+                break
