@@ -46,7 +46,8 @@ class SXFObject:
             f'Points count: {self.points_count}',
             f'Text: {self.text if self.has_text else None}',
             f'Has graphics: {self.has_graphics}',
-            f'Has semantics: {self.has_semantics}'
+            f'Has semantics: {self.has_semantics}',
+            f'Type: {self.type}'
         ])
 
     def __parse_header(self):
