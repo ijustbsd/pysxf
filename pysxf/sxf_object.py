@@ -93,7 +93,7 @@ class SXFObject:
                 (0, 0): (2, '<H'),
                 (0, 1): (4, '<f'),
                 (1, 0): (4, '<i'),
-                (1, 1): (8, '<q')
+                (1, 1): (8, '<d')
             }[(self.raw_data_size, self.raw_data_type)]
         except KeyError:
             raise ValueError('Invalid metrics coordinates format!')
