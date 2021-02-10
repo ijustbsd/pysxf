@@ -37,7 +37,7 @@ class SXFObject:
             f'Start ID: 0x{self.start_id:x}',
             f'Full length: {self.full_len}',
             f'Metrics length: {self.metrics_len}',
-            f'Classifier code: {self.classifier_code}',
+            f'Classification code: {self.class_code}',
             f'ID: {self.id}',
             f'Group ID: {self.group_id}',
             f'Generalization level: {self.general_levels}',
@@ -72,8 +72,8 @@ class SXFObject:
         self.metrics_len = struct.unpack('<I', raw_metrics_len)[0]
 
         # классификационный код
-        raw_classifier_code = data[12:16]
-        self.classifier_code = struct.unpack('<I', raw_classifier_code)[0]
+        raw_class_code = data[12:16]
+        self.class_code = struct.unpack('<I', raw_class_code)[0]
 
         # собственный номер объекта
         raw_id = data[16:20]

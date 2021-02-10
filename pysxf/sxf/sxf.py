@@ -1,14 +1,18 @@
 import datetime
 import struct
-from typing import List
+from typing import List, Optional
 
+from pysxf import RSC
 from .sxf_object import SXFObject
 
 
 class SXF:
 
-    def __init__(self, path: str):
+    def __init__(self,
+                 path: str,
+                 rsc_path: Optional[str] = None):
         self.path = path
+        self.rsc_path = rsc_path
 
         map_file = open(self.path, 'rb')
 
@@ -146,14 +150,20 @@ class SXF:
             f'Records count: {self.records_count}'
         ])
 
+    def __parse_rsc(self):
+        rsc = RSC(self.rsc_path)
+        rsc.parse_objects()
+        rsc.parse_palette()
+        rsc.parse_display_params()
+        return rsc
+
     def parse(self) -> List[SXFObject]:
         """
         Парсинг записей, метрик и семантик.
         """
 
-        # заголовок записи
-        # матрика объекта и подобъектов
-        # семантика объекта
+        if self.rsc_path is not None:
+            self.rsc = self.__parse_rsc()
 
         map_file = open(self.path, 'rb')
         map_file.seek(self.passport_len + self.descriptor_len)
@@ -161,7 +171,8 @@ class SXF:
         self.objects = []
 
         for _ in range(self.records_count):
-            self.objects.append(SXFObject(map_file))
+            obj = SXFObject(map_file)
+            self.objects.append(obj)
 
         map_file.close()
 

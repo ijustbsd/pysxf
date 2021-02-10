@@ -1,7 +1,10 @@
 import datetime
 import logging
 import struct
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Dict, List, Optional, Tuple
+
+from .primitives import GparhicPrimitive, code_to_primitive
+from .rsc_object import RSCObject
 
 
 class RSC:
@@ -82,6 +85,16 @@ class RSC:
 
     fonts_encoding: int
     palette_colors: int
+
+    # объекты
+    objects: Dict[int, RSCObject] = {}
+
+    # палитра
+    palette: List[Tuple[int, int, int]] = []
+    palette_name: str
+
+    # параметры экрана
+    display_params: Dict[int, GparhicPrimitive] = {}
 
     def __init__(self, path: str):
         self.path = path
@@ -250,40 +263,28 @@ class RSC:
         return result
 
     def parse_objects(self):
+        """
+        Парсинг таблицы объектов.
+        """
+
         rsc_file = open(self.path, 'rb')
         rsc_file.seek(self.obj_offset - 4)
 
         raw_obj_id = rsc_file.read(4)
         obj_id = struct.unpack('<4s', raw_obj_id)[0]
         if obj_id != b'OBJ\x00':
-            raise ValueError('Invalid OBJ table ID!')
-
-        self.objects = {}
-
-        obj_template = {
-            'len': (4, '<I'),
-            'classifier_code': (4, '<I'),
-            'internal_code': (4, '<I'),
-            'id': (4, '<I'),
-            'name': (32, '<32s'),
-            'title': (32, '<32s'),
-            '_': (32, '<32s')
-        }
+            raise ValueError('Invalid OBJ table ID!', obj_id)
 
         for _ in range(self.obj_count):
-
-            obj = {}
-            for k, v in obj_template.items():
-                obj[k] = self.__get_table_row(rsc_file, *v, 0)
-
-            # obj['name'] = obj['name'].rstrip(b'\x00').decode('cp1251')
-            # obj['title'] = obj['title'].rstrip(b'\x00').decode('cp1251')
-
-            self.objects[obj['internal_code']] = obj
+            rsc_obj = RSCObject(rsc_file)
+            self.objects[rsc_obj.class_code] = rsc_obj
 
         rsc_file.close()
 
-    def parse_params(self):
+    def parse_display_params(self):
+        """
+        Парсинг таблицы параметров экрана.
+        """
 
         rsc_file = open(self.path, 'rb')
         rsc_file.seek(self.par_offset - 4)
@@ -293,12 +294,10 @@ class RSC:
         if par_id != b'PAR\x00':
             raise ValueError('Invalid PAR table ID!')
 
-        self.params = []
-
         par_template = {
             'len': (4, '<I'),
             'internal_code': (2, '<H'),
-            'func_show_num': (2, '<H'),
+            'show_code': (2, '<H'),
         }
 
         for _ in range(self.par_count):
@@ -307,45 +306,22 @@ class RSC:
             for k, v in par_template.items():
                 par[k] = self.__get_table_row(rsc_file, *v, 0)
 
-            if par['func_show_num'] in (128, 129, 148, 135, 140):
-                is_rgb, *data = self.__get_table_row(rsc_file, 4, '<BBBB')[::-1]
+            data_len = par['len'] - 8
+            par['raw_data'] = self.__get_table_row(rsc_file, data_len, f'<{data_len}s', 0)
 
-                if is_rgb == 0xF0:
-                    index = data[-1]
-                    color = self.palette[index]
-                else:
-                    color = data
+            primitive = code_to_primitive(par['show_code'])
+            if primitive is not None:
+                prim = primitive(par['raw_data'])
+                prim.parse()
 
-                self.objects[par['internal_code']]['color'] = color
-                sem_len = par['len'] - 12
-            else:
-                sem_len = par['len'] - 8
-            par['_'] = self.__get_table_row(rsc_file, sem_len, f'<{sem_len}s', 0)
+                # if prim.color is not None:
+                #     is_rgb, *data = prim.color
+                #     if is_rgb == 0xF0:
+                #         prim.color = self.palette[data[-1]]
+                #     else:
+                #         prim.color = data
 
-            # if par['internal_code'] in (227, 228):
-            #     len_ = struct.unpack('<I', par['_'][4:8])[0]
-            #     count = struct.unpack('<I', par['_'][8:12])[0]
-            #     len_1 = struct.unpack('<H', par['_'][12:14])[0]
-            #     i = 14
-            #     for x in range(count):
-            #         type_ = struct.unpack('<H', par['_'][i:i+2])[0]
-            #         i += 2
-            #         if type_ in (135,):
-            #             is_rgb, *data = struct.unpack('<BBBB', par['_'][i:i+4])[::-1]
-            #             i += 4
-            #             if is_rgb == 0xF0:
-            #                 index = data[-1]
-            #                 color = self.palette[index]
-            #             else:
-            #                 color = data
-            #             self.objects[par['internal_code']]['color'] = color
-            #         else:
-            #             i += (len_1 - 4)
-
-            # obj['name'] = obj['name'].rstrip(b'\x00').decode('cp1251')
-            # obj['title'] = obj['title'].rstrip(b'\x00').decode('cp1251')
-
-            self.params.append(par)
+            self.display_params[par['internal_code']] = prim
 
         rsc_file.close()
 
@@ -357,8 +333,6 @@ class RSC:
         pal_id = struct.unpack('<4s', raw_pal_id)[0]
         if pal_id != b'PAL\x00':
             raise ValueError('Invalid PAL table ID!')
-
-        self.palette = []
 
         for _ in range(self.pal_count * 256):
             rgb = self.__get_table_row(rsc_file, 4, '<BBBB')[:3]
