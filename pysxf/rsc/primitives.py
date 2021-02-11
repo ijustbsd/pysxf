@@ -12,7 +12,7 @@ def code_to_primitive(code):
         148: ShiftDottedLine,
         135: Area,
         153: DottedArea,
-        # 143: Point,
+        143: Point,
         140: Circle,
         147: SetPrimitives
     }.get(code)
@@ -104,11 +104,10 @@ class Point(GparhicPrimitive):
     side_size: int
     vertical_anchor: int
     horizontal_anchor: int
-    mask_colors: List[Color]
-    mask: bytes
+    masks: List[Tuple[Color, Tuple[int]]]
 
     def parse(self):
-        self.mask_colors = []
+        self.masks = []
 
         self.length = struct.unpack('<I', self.raw_data[:4])[0]
         self.mask_count = struct.unpack('<I', self.raw_data[4:8])[0]
@@ -116,11 +115,13 @@ class Point(GparhicPrimitive):
         self.vertical_anchor = struct.unpack('<I', self.raw_data[12:16])[0]
         self.horizontal_anchor = struct.unpack('<I', self.raw_data[16:20])[0]
 
-        i = 16
+        i = 20
         for _ in range(self.mask_count):
-            mask_color = struct.unpack('<BBBB', self.raw_data[i:i+4])[::-1]
-            self.mask_colors.append(mask_color)
-        self.mask = struct.unpack('<128s', self.raw_data[i:i+128])[0]
+            color = struct.unpack('<BBBB', self.raw_data[i:i+4])[::-1]
+            i += 4
+            mask = struct.unpack('<128B', self.raw_data[i:i+128])
+            mask_bin = tuple(int(bit) for byte in mask for bit in bin(byte)[2:].zfill(8))
+            self.masks.append((color, mask_bin))
 
 
 class Circle(GparhicPrimitive):
