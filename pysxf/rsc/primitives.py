@@ -26,6 +26,11 @@ class GparhicPrimitive(ABC):
     def __init__(self, raw_data: bytes):
         self.raw_data = raw_data
 
+    def __str__(self) -> str:
+        name = self.__class__.__name__
+        items = self.__dict__.items()
+        return '\n'.join([name + ':'] + [f'> {k}: {v}' for k, v in items])
+
     @abstractmethod
     def parse(self): ...
 
