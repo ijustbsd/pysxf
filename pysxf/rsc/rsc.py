@@ -324,7 +324,7 @@ class RSC:
                 #     else:
                 #         prim.color = data
 
-            self.display_params[par['internal_code']] = prim
+                self.display_params[par['internal_code']] = prim
 
         rsc_file.close()
 
