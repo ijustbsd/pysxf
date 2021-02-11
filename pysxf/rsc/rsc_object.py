@@ -38,7 +38,11 @@ class RSCObject:
         raw_title = self.fp.read(32)
         self.title = struct.unpack('<32s', raw_title)[0]
 
-        self.fp.read(self.length - 80)
+        # характер локализации
+        raw_type = self.fp.read(1)
+        self.type = struct.unpack('<B', raw_type)[0]
+
+        self.fp.read(self.length - 81)
 
     def __str__(self):
         return '\n'.join([
