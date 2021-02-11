@@ -13,6 +13,7 @@ def code_to_primitive(code):
         135: Area,
         153: DottedArea,
         143: Point,
+        144: PatternArea,
         140: Circle,
         147: SetPrimitives
     }.get(code)
@@ -76,7 +77,7 @@ class Area(GparhicPrimitive):
 
 
 class DottedArea(GparhicPrimitive):
-    """Площадь."""
+    """Штрихованная площадь."""
     code = 153
     length: int
     stroke_angle: int
@@ -122,6 +123,22 @@ class Point(GparhicPrimitive):
             mask = struct.unpack('<128B', self.raw_data[i:i+128])
             mask_bin = tuple(int(bit) for byte in mask for bit in bin(byte)[2:].zfill(8))
             self.masks.append((color, mask_bin))
+
+
+class PatternArea(GparhicPrimitive):
+    """Площадь, заполненная знаками."""
+    code = 144
+    grid_type: int
+    fill_type: bool
+    border_width: int
+    sign: Point
+
+    def parse(self):
+        self.grid_type = struct.unpack('<H', self.raw_data[:2])[0]
+        self.fill_type = struct.unpack('<B', self.raw_data[2:3])[0]
+        self.border_width = struct.unpack('<B', self.raw_data[3:4])
+        self.sign = Point(self.raw_data[4:])
+        self.sign.parse()
 
 
 class Circle(GparhicPrimitive):
