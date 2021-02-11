@@ -87,7 +87,7 @@ class RSC:
     palette_colors: int
 
     # объекты
-    objects: Dict[int, RSCObject] = {}
+    objects: Dict[int, List[RSCObject]] = {}
 
     # палитра
     palette: List[Tuple[int, int, int]] = []
@@ -277,7 +277,10 @@ class RSC:
 
         for _ in range(self.obj_count):
             rsc_obj = RSCObject(rsc_file)
-            self.objects[rsc_obj.class_code] = rsc_obj
+            if rsc_obj.class_code in self.objects:
+                self.objects[rsc_obj.class_code].append(rsc_obj)
+            else:
+                self.objects[rsc_obj.class_code] = [rsc_obj]
 
         rsc_file.close()
 
