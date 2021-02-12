@@ -15,6 +15,7 @@ def code_to_primitive(code):
         143: Point,
         144: PatternArea,
         140: Circle,
+        142: Label,
         147: SetPrimitives
     }.get(code)
 
@@ -151,6 +152,40 @@ class Circle(GparhicPrimitive):
         self.color = struct.unpack('<BBBB', self.raw_data[:4])[::-1]
         self.width = struct.unpack('<I', self.raw_data[4:8])[0]
         self.radius = struct.unpack('<I', self.raw_data[8:12])[0]
+
+
+class Label(GparhicPrimitive):
+    """Текст."""
+    code = 142
+    background_color: Color
+    shadow_color: Color
+    height: int
+    weight: int
+    align: int
+    char_width: int
+    is_horizontal: bool
+    is_italic: bool
+    is_underline: bool
+    is_strikeout: bool
+    type: int
+    code_page: bytes
+    scale: bool
+
+    def parse(self):
+        self.color = struct.unpack('<BBBB', self.raw_data[:4])[::-1]
+        self.background_color = struct.unpack('<BBBB', self.raw_data[4:8])[::-1]
+        self.shadow_color = struct.unpack('<BBBB', self.raw_data[8:12])[::-1]
+        self.height = struct.unpack('<I', self.raw_data[12:16])[0]
+        self.weight = struct.unpack('<I', self.raw_data[16:20])[0]
+        self.align = struct.unpack('<H', self.raw_data[20:22])[0]
+        self.char_width = struct.unpack('<B', self.raw_data[24:25])[0]
+        self.is_horizontal = bool(struct.unpack('<B', self.raw_data[25:26])[0])
+        self.is_italic = bool(struct.unpack('<B', self.raw_data[26:27])[0])
+        self.is_underline = bool(struct.unpack('<B', self.raw_data[27:28])[0])
+        self.is_strikeout = bool(struct.unpack('<B', self.raw_data[28:29])[0])
+        self.type = struct.unpack('<B', self.raw_data[29:30])[0]
+        self.code_page = struct.unpack('<B', self.raw_data[30:31])[0]
+        self.scale = bool(struct.unpack('<B', self.raw_data[31:32])[0])
 
 
 class SetPrimitives(GparhicPrimitive):
